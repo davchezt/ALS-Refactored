@@ -109,7 +109,7 @@ void UAlsCameraComponent::GetViewInfo(FMinimalViewInfo& ViewInfo) const
 	}
 }
 
-void UAlsCameraComponent::TickCamera(const float DeltaTime, const bool bAllowLag)
+void UAlsCameraComponent::TickCamera(const float DeltaTime, bool bAllowLag)
 {
 	DECLARE_SCOPE_CYCLE_COUNTER(TEXT("UAlsCameraComponent::TickCamera()"), STAT_UAlsCameraComponent_TickCamera, STATGROUP_Als)
 
@@ -161,6 +161,7 @@ void UAlsCameraComponent::TickCamera(const float DeltaTime, const bool bAllowLag
 
 	const auto CameraTargetRotation{Character->GetViewRotation()};
 
+	const auto PreviousPivotTargetLocation{PivotTargetLocation};
 	const auto PivotTargetTransform{GetThirdPersonPivotTransform()};
 
 	PivotTargetLocation = PivotTargetTransform.GetLocation();
@@ -181,6 +182,11 @@ void UAlsCameraComponent::TickCamera(const float DeltaTime, const bool bAllowLag
 		CameraFov = Settings->FirstPerson.Fov;
 		return;
 	}
+
+	// Force disable camera lag if the character was teleported.
+
+	bAllowLag &= Settings->TeleportDistanceThreshold <= 0.0f ||
+		FVector::DistSquared(PreviousPivotTargetLocation, PivotTargetLocation) <= FMath::Square(Settings->TeleportDistanceThreshold);
 
 	// Calculate camera rotation.
 
