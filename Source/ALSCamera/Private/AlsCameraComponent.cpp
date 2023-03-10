@@ -131,11 +131,14 @@ void UAlsCameraComponent::TickCamera(const float DeltaTime, const bool bAllowLag
 	const auto& BasedMovement{Character->GetBasedMovement()};
 	const auto bMovementBaseHasRelativeRotation{BasedMovement.HasRelativeRotation()};
 
-	FVector MovementBaseLocation;
-	FQuat MovementBaseRotation;
+	auto MovementBaseLocation{FVector::ZeroVector};
+	auto MovementBaseRotation{FQuat::Identity};
 
-	MovementBaseUtility::GetMovementBaseTransform(BasedMovement.MovementBase, BasedMovement.BoneName,
-	                                              MovementBaseLocation, MovementBaseRotation);
+	if (bMovementBaseHasRelativeRotation)
+	{
+		MovementBaseUtility::GetMovementBaseTransform(BasedMovement.MovementBase, BasedMovement.BoneName,
+		                                              MovementBaseLocation, MovementBaseRotation);
+	}
 
 	if (BasedMovement.MovementBase != MovementBasePrimitive || BasedMovement.BoneName != MovementBaseBoneName)
 	{
@@ -156,8 +159,6 @@ void UAlsCameraComponent::TickCamera(const float DeltaTime, const bool bAllowLag
 		}
 	}
 
-	// Calculate camera rotation.
-
 	const auto CameraTargetRotation{Character->GetViewRotation()};
 
 	const auto PivotTargetTransform{GetThirdPersonPivotTransform()};
@@ -170,6 +171,8 @@ void UAlsCameraComponent::TickCamera(const float DeltaTime, const bool bAllowLag
 
 	if (FAnimWeight::IsFullWeight(FirstPersonOverride))
 	{
+		// Skip other calculations if the character is fully in first-person mode.
+
 		PivotLagLocation = PivotTargetLocation;
 		PivotLocation = PivotTargetLocation;
 
@@ -178,6 +181,8 @@ void UAlsCameraComponent::TickCamera(const float DeltaTime, const bool bAllowLag
 		CameraFov = Settings->FirstPerson.Fov;
 		return;
 	}
+
+	// Calculate camera rotation.
 
 	if (bMovementBaseHasRelativeRotation)
 	{
